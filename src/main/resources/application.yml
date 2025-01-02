@@ -1,0 +1,10 @@
+spring:
+  cloud:
+    azure:
+      storage:
+        blob:
+          container-name: ${AZURE_DATASTORAGE_CONTAINER_NAME:""}
+
+azure:
+  blob-storage:
+    connection-string: ${AZURE_DATASTORAGE_CONNECTION_STRING:""}
