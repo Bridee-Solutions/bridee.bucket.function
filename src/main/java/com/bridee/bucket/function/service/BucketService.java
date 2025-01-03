@@ -6,28 +6,27 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.bridee.bucket.function.dto.FileRequest;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
 import java.util.Objects;
 
-@Slf4j
 @Service
 public class BucketService {
-
-    @Value("${azure.blob-storage.connection-string}")
-    private String azureConnectionString;
 
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String azureContainerName;
 
     private BlobServiceClient blobServiceClient;
 
-    @PostConstruct
-    public void init(){
-        this.blobServiceClient = new BlobServiceClientBuilder().connectionString(azureConnectionString).buildClient();
+    public BucketService(BlobServiceClient blobServiceClient) {
+        this.blobServiceClient = blobServiceClient;
     }
 
     public byte[] downloadFile(String filename) {
@@ -39,21 +38,20 @@ public class BucketService {
         try{
             binaries = blobClient.downloadContent().toBytes();
         }catch (Exception e){
-            log.error("Failed to download file with error message: {}", e.getMessage());
         }
         return binaries;
     }
 
-    public void uploadFile(FileRequest fileRequest) {
-
+    public String uploadFile(FileRequest fileRequest) {
         BlobClient blobClient = blobServiceClient.getBlobContainerClient(azureContainerName).getBlobClient(fileRequest.getFileName());
-        try {
-            MultipartFile multipartFile = fileRequest.getFile();
-            blobClient.upload(multipartFile.getInputStream(), multipartFile.getSize(), true);
-        } catch (IOException e) {
-            log.error("Failed to upload file with error message: {}", e.getMessage());
-        }
+        InputStream fileContent = fromEncodedString(fileRequest.getFile());
+        blobClient.upload(fileContent,true);
+        return "File uploaded sucessfully";
+    }
 
+    private InputStream fromEncodedString(String fileContent){
+        byte[] content = Base64.getDecoder().decode(fileContent);
+        return new ByteArrayInputStream(content);
     }
 
 
