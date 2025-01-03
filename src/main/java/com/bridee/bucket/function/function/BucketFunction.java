@@ -8,19 +8,17 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
 
 @Component
+@RequiredArgsConstructor
 public class BucketFunction {
 
     private final BucketService bucketService;
-
-    public BucketFunction(BucketService bucketService) {
-        this.bucketService = bucketService;
-    }
 
     @FunctionName("uploadFile")
     public HttpResponseMessage uploadFile(@HttpTrigger(name = "request", methods = HttpMethod.POST, authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<FileRequest> request,
@@ -35,6 +33,22 @@ public class BucketFunction {
         executionContext.getLogger().info("File uploaded successfully!");
         return request.createResponseBuilder(HttpStatus.OK)
                 .header("Content-Type", "application/json")
+                .build();
+    }
+
+    @FunctionName("downloadFile")
+    public HttpResponseMessage downloadFile(@HttpTrigger(name="request", methods = HttpMethod.GET, authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<FileRequest> request,
+                                            ExecutionContext executionContext){
+
+        if (request == null){
+            throw new IllegalArgumentException("Request cannot be null");
+        }
+
+        String fileName = request.getBody().getFileName();
+        executionContext.getLogger().info("Downloading file: %s".formatted(fileName));
+        byte[] file = bucketService.downloadFile(fileName);
+        return request.createResponseBuilder(HttpStatus.OK)
+                .body(file)
                 .build();
     }
 

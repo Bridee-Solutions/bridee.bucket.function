@@ -2,32 +2,27 @@ package com.bridee.bucket.function.service;
 
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.bridee.bucket.function.dto.FileRequest;
-import jakarta.annotation.PostConstruct;
+import com.microsoft.azure.functions.ExecutionContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.Objects;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class BucketService {
 
     @Value("${spring.cloud.azure.storage.blob.container-name}")
     private String azureContainerName;
 
-    private BlobServiceClient blobServiceClient;
-
-    public BucketService(BlobServiceClient blobServiceClient) {
-        this.blobServiceClient = blobServiceClient;
-    }
+    private final BlobServiceClient blobServiceClient;
 
     public byte[] downloadFile(String filename) {
         byte[] binaries = null;
@@ -38,15 +33,15 @@ public class BucketService {
         try{
             binaries = blobClient.downloadContent().toBytes();
         }catch (Exception e){
+            log.error("Error while trying to download file: %s, with the following error: %s".formatted(filename, e.getMessage()));
         }
         return binaries;
     }
 
-    public String uploadFile(FileRequest fileRequest) {
+    public void uploadFile(FileRequest fileRequest) {
         BlobClient blobClient = blobServiceClient.getBlobContainerClient(azureContainerName).getBlobClient(fileRequest.getFileName());
         InputStream fileContent = fromEncodedString(fileRequest.getFile());
         blobClient.upload(fileContent,true);
-        return "File uploaded sucessfully";
     }
 
     private InputStream fromEncodedString(String fileContent){
