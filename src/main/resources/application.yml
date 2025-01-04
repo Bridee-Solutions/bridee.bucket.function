@@ -8,3 +8,6 @@ spring:
 azure:
   blob-storage:
     connection-string: ${AZURE_DATASTORAGE_CONNECTION_STRING:""}
+
+app:
+  x-api-key: ${X_API_KEY:"DEFAULT"}

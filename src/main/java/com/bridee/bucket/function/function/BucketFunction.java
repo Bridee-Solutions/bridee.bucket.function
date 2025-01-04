@@ -8,15 +8,20 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class BucketFunction {
+
+    @Value("${app.x-api-key}")
+    private String apiKey;
 
     private final BucketService bucketService;
 
@@ -27,6 +32,7 @@ public class BucketFunction {
         if (Objects.isNull(request)){
             throw new IllegalArgumentException("request cannot be null");
         }
+        validateApiKey(request);
 
         executionContext.getLogger().info("Trying to upload the file with name %s".formatted(request.getBody().getFileName()));
         bucketService.uploadFile(request.getBody());
@@ -43,13 +49,23 @@ public class BucketFunction {
         if (request == null){
             throw new IllegalArgumentException("Request cannot be null");
         }
+        validateApiKey(request);
 
         String fileName = request.getBody().getFileName();
         executionContext.getLogger().info("Downloading file: %s".formatted(fileName));
         byte[] file = bucketService.downloadFile(fileName);
+        executionContext.getLogger().info("Download executed successfully!");
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(file)
                 .build();
+    }
+
+    private void validateApiKey(HttpRequestMessage<?> requestMessage){
+        String requestApiKey = requestMessage.getHeaders().get("x-api-key");
+        if (Objects.isNull(requestApiKey) || !requestApiKey.equals(apiKey)){
+            log.error("Api key %s não é valida".formatted(requestApiKey));
+            throw new IllegalArgumentException("Api key inválida");
+        }
     }
 
 }
