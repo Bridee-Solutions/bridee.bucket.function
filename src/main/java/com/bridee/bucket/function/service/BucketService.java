@@ -3,7 +3,6 @@ package com.bridee.bucket.function.service;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.bridee.bucket.function.dto.FileRequest;
-import com.microsoft.azure.functions.ExecutionContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,18 +23,18 @@ public class BucketService {
 
     private final BlobServiceClient blobServiceClient;
 
-    public byte[] downloadFile(String filename) {
-        byte[] binaries = null;
+    public String downloadFile(String filename) {
+        String fileUrl = null;
         if (Objects.isNull(filename)){
             return null;
         }
-        BlobClient blobClient = blobServiceClient.getBlobContainerClient(azureContainerName).getBlobClient(filename);
         try{
-            binaries = blobClient.downloadContent().toBytes();
+            BlobClient blobClient = blobServiceClient.getBlobContainerClient(azureContainerName).getBlobClient(filename);
+            fileUrl = blobClient.getBlobUrl();
         }catch (Exception e){
             log.error("Error while trying to download file: %s, with the following error: %s".formatted(filename, e.getMessage()));
         }
-        return binaries;
+        return fileUrl;
     }
 
     public void uploadFile(FileRequest fileRequest) {

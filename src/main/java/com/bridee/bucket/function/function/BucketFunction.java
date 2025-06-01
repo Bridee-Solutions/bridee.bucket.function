@@ -53,7 +53,7 @@ public class BucketFunction {
 
         String fileName = request.getBody().getFileName();
         executionContext.getLogger().info("Downloading file: %s".formatted(fileName));
-        byte[] file = bucketService.downloadFile(fileName);
+        String file = bucketService.downloadFile(fileName);
         executionContext.getLogger().info("Download executed successfully!");
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(file)
